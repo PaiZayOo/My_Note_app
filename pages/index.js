@@ -1,55 +1,33 @@
 import { addTodo, getTodos } from "@/api/todosApi";
 import { list } from "postcss";
 import React, { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "react-query";
 import { Loader } from "@mantine/core";
 import TodoCard from "@/components/TodoCard";
 import { Input } from "@mantine/core";
 import { Button } from "@mantine/core";
 import  {moment} from 'moment'
+import { useAddTodoMutation, useTodo } from "@/hooks/useTodos/useTodo";
+import { getCurrentDate } from "@/hooks/useTodos/getCurrnetDate";
 
 
 
 
 const home = () => {
   const [newTodos, setTodos] = useState("");
-  const queryClient = useQueryClient();
-  const {
-    data: todos,
-    isError,
-    error,
-    isLoading,
-  } = useQuery({
-    queryKey: ["todos", "get"],
-    queryFn: getTodos,
-  });
-  
-  const sortedTodos = todos?.sort((a, b) => b.id - a.id)
-  const addTodoMutation = useMutation(addTodo,{
-    onSuccess: () => {
-      queryClient.invalidateQueries('todos');
-    }
-  });
+  const {postQuery,useAddTodoMutation} = useTodo();
 
-  const getCurrentDate = () =>{
-    const currentDate = new Date();
-    const day = currentDate.getDate();
-    const month = currentDate.getMonth() + 1;
-    const year = currentDate.getFullYear();
-    const hours = currentDate.getHours();
-    const minutes = currentDate.getMinutes();
-    const seconds = currentDate.getSeconds();
+  const { data: todos, isLoading, error } = postQuery();
   
-    return `${day}, ${month}, ${year} | ${hours}:${minutes}:${seconds}`;
-  }
+  const sortedTodos = todos?.sort((a, b) => b.id - a.id) 
+
+ 
 
   const formattedDate = getCurrentDate();
-
-
+const {mutate:addTodo} = useAddTodoMutation();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    addTodoMutation.mutate({title:newTodos,isFinished:false,date: formattedDate })
+    addTodo({title:newTodos,isFinished:false,date: formattedDate })
     setTodos("");
   };
 
@@ -79,6 +57,7 @@ const home = () => {
               size="lg"
               value={newTodos}
               onChange={(e) => setTodos(e.target.value)}
+              required
             />
             <Button variant="outline" radius="md" size="lg" type="submit">
               Add

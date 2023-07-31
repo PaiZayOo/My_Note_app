@@ -2,53 +2,23 @@ import React, { useState } from "react";
 import { Card, Button } from "@mantine/core";
 import { AiOutlineDelete } from "react-icons/ai";
 import { BiSolidPencil } from "react-icons/bi";
-import { useMutation, useQuery, useQueryClient } from "react-query";
-import { deleteTodo, getTodos, statusTodo, updateTodo } from "@/api/todosApi";
 import { Input } from "@mantine/core";
-
+import { getCurrentDate } from "@/hooks/useTodos/getCurrnetDate";
+import { useTodo } from "@/hooks/useTodos/useTodo";
 
 const TodoCard = ({ todo }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newTodoTitle, setNewTodoTitle] = useState(todo.title);
-  const queryClient = useQueryClient();
   const {
-    data: todos,
-    isError,
-    error,
-    isLoading,
-  } = useQuery({
-    queryKey: ["todos", "get"],
-    queryFn: getTodos,
-  });
-
-  const updateTodoMutation = useMutation(updateTodo, {
-    onSuccess: () => {
-      queryClient.invalidateQueries("todos");
-    },
-  });
-
-  const deleteTodoMutation = useMutation(deleteTodo, {
-    onSuccess: () => {
-      queryClient.invalidateQueries("todos");
-    },
-  });
-
-  const statusTodoMutation = useMutation(statusTodo, {
-    onSuccess: () => {
-      queryClient.invalidateQueries("todos");
-    },
-  });
-  const getCurrentDate = () =>{
-    const currentDate = new Date();
-    const day = currentDate.getDate();
-    const month = currentDate.getMonth() + 1;
-    const year = currentDate.getFullYear();
-    const hours = currentDate.getHours();
-    const minutes = currentDate.getMinutes();
-    const seconds = currentDate.getSeconds();
-  
-    return `${day}, ${month}, ${year} | ${hours}:${minutes}:${seconds}`;
-  }
+    postQuery,
+    useUpdateToDoMutation,
+    useDeleteToDoMutation,
+    useStatusToDoMutation,
+  } = useTodo();
+  const { data: todos, isLoading } = postQuery();
+  const { mutate: updateTodo } = useUpdateToDoMutation();
+  const { mutate: deleteTodo } = useDeleteToDoMutation();
+  const { mutate: status } = useStatusToDoMutation();
 
   const formattedDate = getCurrentDate();
 
@@ -61,17 +31,17 @@ const TodoCard = ({ todo }) => {
       ...todo,
       title: newTodoTitle,
       isFinished: false,
-      date : formattedDate
+      date: formattedDate,
     };
 
-    updateTodoMutation.mutate({ id: todo.id, updatedTodo });
+    updateTodo({ id: todo.id, updatedTodo });
 
     handleToggleEdit();
   };
   const handleStatusTodo = () => {
     const statusTodo = { ...todo, isFinished: !todo.isFinished };
 
-    statusTodoMutation.mutate({ id: todo.id, statusTodo });
+    status({ id: todo.id, statusTodo });
   };
   return (
     <div>
@@ -122,7 +92,7 @@ const TodoCard = ({ todo }) => {
         <div className=" flex justify-between ">
           <div>
             <button
-              onClick={() => deleteTodoMutation.mutate(todo.id)}
+              onClick={() => deleteTodo(todo.id)}
               className=" text-2xl text-red-600 mr-3"
             >
               <AiOutlineDelete />
